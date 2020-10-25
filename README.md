@@ -1,4 +1,4 @@
-# node-machina-ffxiv
+# node-zanarkand-proto
 A WIP Node.js wrapper for acchan's [Zanarkand](https://github.com/ayyaruq/zanarkand) network capture library.
 
 Many features are unimplemented, and chat-related messages aren't completely working, but besides that what is implemented is probably usable.
