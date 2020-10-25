@@ -136,9 +136,9 @@ const MachinaFFXIV = (() => {
             if (this[parseAlgorithm]) this[args].push(...["--ParseAlgorithm", this[parseAlgorithm]]);
             if (this[region]) this[args].push(...["--Region", this[region]]);
             if (this[port]) this[args].push(...["--Port", this[port]]);
-            this[exePath] = (options && options.machinaExePath) || path.join(__dirname, '/MachinaWrapper/MachinaWrapper.exe');
+            this[exePath] = (options && options.machinaExePath) || path.join(__dirname, '/ZanarkandWrapper/ZanarkandWrapperJSON.exe');
             if (!fs.existsSync(this[exePath])) {
-                throw new Error(`MachinaWrapper not found in ${this[exePath]}`);
+                throw new Error(`ZanarkandWrapperJSON not found in ${this[exePath]}`);
             }
 
             if (this[hasWine]) {
@@ -148,7 +148,7 @@ const MachinaFFXIV = (() => {
             }
             this[logger]({
                 level: "info",
-                message: `MachinaWrapper spawned with arguments "${this[args].toString()}"`,
+                message: `ZanarkandWrapper spawned with arguments "${this[args].toString()}"`,
             });
 
             MachinaModels.loadDefinitions(options && options.definitionsDir);
@@ -222,7 +222,7 @@ const MachinaFFXIV = (() => {
                 this[server].close();
                 this[logger]({
                     level: "info",
-                    message: `MachinaWrapper closed with code: ${code || signal}`,
+                    message: `ZanarkandWrapper closed with code: ${code || signal}`,
                 });
             });
         }
@@ -247,12 +247,12 @@ const MachinaFFXIV = (() => {
             this.start(callback);
             this[logger]({
                 level: "info",
-                message: `MachinaWrapper reset!`,
+                message: `ZanarkandWrapper reset!`,
             });
         }
 
         start(callback) {
-            if (!this[monitor]) throw "MachinaWrapper is uninitialized.";
+            if (!this[monitor]) throw "ZanarkandWrapper is uninitialized.";
             this[server].listen(this[port], (err) => {
                 if (err) return this[logger]({
                     level: "error",
@@ -266,12 +266,12 @@ const MachinaFFXIV = (() => {
             this[monitor].stdin.write("start\n", callback);
             this[logger]({
                 level: "info",
-                message: `MachinaWrapper started!`,
+                message: `ZanarkandWrapper started!`,
             });
         }
 
         stop(callback) {
-            if (!this[monitor]) throw "MachinaWrapper is uninitialized.";
+            if (!this[monitor]) throw "ZanarkandWrapper is uninitialized.";
             try {
                 this[monitor].stdin.write("stop\n", callback);
             } catch {
@@ -289,17 +289,17 @@ const MachinaFFXIV = (() => {
             });
             this[logger]({
                 level: "info",
-                message: `MachinaWrapper stopped!`,
+                message: `ZanarkandWrapper stopped!`,
             });
         }
 
         kill(callback) {
-            if (!this[monitor]) throw "MachinaWrapper is uninitialized.";
+            if (!this[monitor]) throw "ZanarkandWrapper is uninitialized.";
             this[monitor].stdin.end("kill\n", callback);
             this[monitor] = undefined;
             this[logger]({
                 level: "info",
-                message: `MachinaWrapper killed!`,
+                message: `ZanarkandWrapper killed!`,
             });
         }
     };
