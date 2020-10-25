@@ -1,5 +1,5 @@
 # node-machina-ffxiv
-A WIP Node.js wrapper for revahn's [Machina](https://github.com/ravahn/machina) network capture library.
+A WIP Node.js wrapper for acchan's [Zanarkand](https://github.com/ayyaruq/zanarkand) network capture library.
 
 Many features are unimplemented, and chat-related messages aren't completely working, but besides that what is implemented is probably usable.
 
@@ -11,15 +11,13 @@ NOTE: Most features besides the `raw` data event will break after every patch re
 
 ## Installation
 ```
-npm install node-machina-ffxiv
+npm install node-zanarkand-proto
 ```
 
-If you don't trust the copy of MachinaWrapperJSON that is built in the Github Action, feel free to also install [Visual Studio 2017 Community Edition](https://docs.microsoft.com/en-us/visualstudio/releasenotes/vs2017-relnotes) to build [MachinaWrapperJSON](https://github.com/karashiiro/MachinaWrapperJSON) and place the output in the MachinaWrapper folder.
+If you don't trust the copy of ZanarkandWrapperJSON that is built in the Github Action, feel free to also install Go to build [MachinaWrapperJSON](https://github.com/karashiiro/ZanarkandWrapperJSON) and place the output in the MachinaWrapper folder.
 
 ## Usage
-Installing [WinPCap](https://nmap.org/npcap/windows-10.html) is highly recommended, as it reduces the amount of additional setup that needs to be done. Set `monitorType` to `"WinPCap"` to enable WinPCap mode.
-
-Otherwise, your application must be run in Administrator mode, and the .exe needs firewall in/out privileges, since it operates on Windows sockets.
+[WinPCap](https://nmap.org/npcap/windows-10.html) is required.
 
 Please refer to the [wiki](https://github.com/karashiiro/node-machina-ffxiv/wiki) for usage.
 

@@ -145,7 +145,6 @@ const MachinaFFXIV = (() => {
             });
 
             this[monitor].once('close', (code, signal) => {
-                this[server].close();
                 this[logger]({
                     level: "info",
                     message: `ZanarkandWrapper closed with code: ${code || signal}`,
@@ -264,7 +263,7 @@ const MachinaFFXIV = (() => {
     
         async stop(callback) {
             await this.sendMessage("stop", callback);
-            this.ws.close(0);
+            this[ws].close(0);
             this[logger]({
                 level: "info",
                 message: `ZanarkandWrapper stopped!`
@@ -273,7 +272,7 @@ const MachinaFFXIV = (() => {
     
         async kill(callback) {
             await this.sendMessage("kill", callback);
-            this.ws.close(0);
+            this[ws].close(0);
             this[logger]({
                 level: "info",
                 message: `ZanarkandWrapper killed!`
@@ -282,12 +281,12 @@ const MachinaFFXIV = (() => {
     
         async sendMessage(message, callback) {
             try {
-                if (this.options.noExe) return; // nop
-                if (!this.childProcess) {
+                if (this[noExe]) return; // nop
+                if (!this[monitor]) {
                     throw new Error("ZanarkandWrapper is uninitialized.");
                 }
                 await this.waitForWebSocketReady();
-                this.ws.send(message, callback);
+                this[ws].send(message, callback);
             } catch (err) {
                 if (callback) callback(err);
                 else throw err;
@@ -295,7 +294,7 @@ const MachinaFFXIV = (() => {
         }
     
         async waitForWebSocketReady() {
-            while (this.ws.readyState !== 1)
+            while (this[ws].readyState !== 1)
                 await new Promise((resolve) => setTimeout(resolve, 1));
             return;
         }
