@@ -43,6 +43,8 @@ const MachinaFFXIV = (() => {
                     throw new TypeError("IP must be a string.");
                 } else if (options.ip) {
                     this[ip] = options.ip.replace(/[^0-9.]/g, "");
+                } else {
+                    this[ip] = "localhost";
                 }
 
                 if (options.dataPath && typeof options.dataPath !== 'string') {
@@ -154,7 +156,7 @@ const MachinaFFXIV = (() => {
             this[monitor].stdout
                 .on("data", (chunk) => this[log]({
                     level: "info",
-                    message: chunk
+                    message: chunk,
                 }))
                 .on("error", (err) => this[log]({
                     level: "error",
