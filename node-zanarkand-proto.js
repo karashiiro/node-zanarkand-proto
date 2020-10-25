@@ -22,6 +22,7 @@ const MachinaFFXIV = (() => {
     const noExe = Symbol();
     const logger = Symbol();
     const region = Symbol();
+    const dataPath = Symbol();
 
     const hasWine = Symbol();
     const winePrefix = Symbol();
@@ -113,12 +114,12 @@ const MachinaFFXIV = (() => {
                 if (this[port]) this[args].push(...["-Port", this[port]]);
                 if (this[dataPath]) this[args].push(...["-DataPath", this[dataPath]]);
                 if (this[noData]) this[args].push(...["-Dev", this[noData]]);
-                this[exePath] = (options && options.machinaExePath) || path.join(__dirname, '/ZanarkandWrapper/ZanarkandWrapperJSON.exe');
+                this[exePath] = (options && options.machinaExePath) || path.join(__dirname, '/Zanarkand/ZanarkandWrapperJSON.exe');
                 if (!fs.existsSync(this[exePath])) {
                     throw new Error(`ZanarkandWrapperJSON not found in ${this[exePath]}`);
                 }
 
-                this.log({
+                this[logger]({
                     level: "info",
                     message: `Starting ZanarkandWrapper from executable ${this[exePath]}.`,
                 });
@@ -164,7 +165,7 @@ const MachinaFFXIV = (() => {
 
         connect() {
             this[ws] = new WebSocket(
-                `ws://${this.options.networkDevice}:${this.options.port}`,
+                `ws://${this[ip]}:${this[port]}`,
                 {
                     perMessageDeflate: false,
                 },
@@ -202,18 +203,23 @@ const MachinaFFXIV = (() => {
                     }
                 })
                 .on("open", () =>
-                    this.log(
-                        `Connected to ZanarkandWrapper on ${this.options.networkDevice}:${this.options.port}!`,
-                    ),
+                    this[logger]({
+                        level: "info",
+                        message: `Connected to ZanarkandWrapper on ${this[ip]}:${this[port]}!`,
+                    }),
                 )
                 .on("upgrade", () =>
-                    this.log("ZanarkandWrapper connection protocol upgraded."),
+                    this[logger]({
+                        level: "info",
+                        message: "ZanarkandWrapper connection protocol upgraded.",
+                    }),
                 )
-                .on("close", () => this.log("Connection with ZanarkandWrapper closed."))
+                .on("close", () => this[logger]("Connection with ZanarkandWrapper closed."))
                 .on("error", (err) => {
-                    this.log(
-                        `Connection errored with message ${err.message}, reconnecting in 1 second...`,
-                    );
+                    this[logger]({
+                        level: "info",
+                        message: `Connection errored with message ${err.message}, reconnecting in 1 second...`,
+                    });
                     setTimeout(() => this.connect(), 1000); // This cannot be reduced since we need to maintain "this" context.
                 });
         }
@@ -241,7 +247,7 @@ const MachinaFFXIV = (() => {
                 }
     
                 this.start(callback);
-                this.log({
+                this[logger]({
                     level: "info",
                     message: `ZanarkandWrapper reset!`
                 });
@@ -250,7 +256,7 @@ const MachinaFFXIV = (() => {
 
         async start(callback) {
             await this.sendMessage("start", callback);
-            this.log({
+            this[logger]({
                 level: "info",
                 message: `ZanarkandWrapper started!`
             });
@@ -259,7 +265,7 @@ const MachinaFFXIV = (() => {
         async stop(callback) {
             await this.sendMessage("stop", callback);
             this.ws.close(0);
-            this.log({
+            this[logger]({
                 level: "info",
                 message: `ZanarkandWrapper stopped!`
             });
@@ -268,7 +274,7 @@ const MachinaFFXIV = (() => {
         async kill(callback) {
             await this.sendMessage("kill", callback);
             this.ws.close(0);
-            this.log({
+            this[logger]({
                 level: "info",
                 message: `ZanarkandWrapper killed!`
             });
