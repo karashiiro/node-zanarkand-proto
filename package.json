@@ -1,6 +1,6 @@
 {
   "name": "node-zanarkand-proto",
-  "version": "2.37.19",
+  "version": "1.0.0",
   "description": "A wrapper for acchan's Zanarkand network capture library.",
   "main": "node-zanarkand-proto.js",
   "scripts": {
