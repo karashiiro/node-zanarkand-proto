@@ -379,9 +379,5 @@ module.exports.getEffectEntry = (uint8Array, offset) => { // 8 bytes long
     };
 };
 
-function hasSubArray(master, sub) {
-    return sub.every((i => v => i = master.indexOf(v, i) + 1)(0));
-}
-
 module.exports.chatType = common.chatType;
 module.exports.cityIDList = common.cityIDList;
