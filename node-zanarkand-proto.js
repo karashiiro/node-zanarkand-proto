@@ -5,7 +5,6 @@ const EventEmitter = require('events');
 const fs           = require('fs');
 const http         = require('http');
 const path         = require('path');
-const readline     = require('readline');
 
 require('./polyfill.js');
 
@@ -15,16 +14,12 @@ const MachinaModels = require('./models/_MachinaModels.js');
 const MachinaFFXIV = (() => {
     const monitor = Symbol();
     const server = Symbol();
-    const timeout = Symbol();
     const filter = Symbol();
     const port = Symbol();
 
-    const monitorType = Symbol();
-    const pid = Symbol();
     const ip = Symbol();
-    const useSocketFilter = Symbol();
-    const parseAlgorithm = Symbol();
     const noData = Symbol();
+    const noExe = Symbol();
     const logger = Symbol();
     const region = Symbol();
 
@@ -33,6 +28,7 @@ const MachinaFFXIV = (() => {
 
     const args = Symbol();
     const exePath = Symbol();
+    const ws = Symbol();
 
     class MachinaFFXIV extends EventEmitter {
         constructor(options) {
@@ -42,46 +38,28 @@ const MachinaFFXIV = (() => {
 
             // Basic type checks.
             if (options) {
-                if (options.monitorType && typeof options.monitorType !== 'string') {
-                    throw new TypeError("monitorType must be a string.");
-                } else if (options.monitorType) {
-                    this[monitorType] = options.monitorType.replace(/[^a-zA-Z]/g, "");
-                }
-
-                if (options.pid && typeof options.pid !== 'number') {
-                    throw new TypeError("PID must be a number.");
-                } else if (options.pid) {
-                    this[pid] = Math.floor(options.pid);
-                }
-
                 if (options.ip && typeof options.ip !== 'string') {
                     throw new TypeError("IP must be a string.");
                 } else if (options.ip) {
                     this[ip] = options.ip.replace(/[^0-9.]/g, "");
                 }
 
-                if (options.useSocketFilter && typeof options.useSocketFilter !== 'boolean') {
-                    throw new TypeError("useSocketFilter must be a Boolean.");
-                } else if (options.useSocketFilter) {
-                    this[useSocketFilter] = options.useSocketFilter;
-                }
-
-                if (options.parseAlgorithm && typeof options.parseAlgorithm !== 'string') {
-                    throw new TypeError("parseAlgorithm must be a string.");
-                } else if (options.parseAlgorithm) {
-                    this[parseAlgorithm] = options.parseAlgorithm.replace(/[^a-zA-Z]/g, "");
-                    switch (this[parseAlgorithm]) {
-                        case "RAMHeavy": break;
-                        case "CPUHeavy": break;
-                        case "PacketSpecific": break;
-                        default: throw new Error("Invalid parsing algorithm provided! Options are: 'RAMHeavy', 'CPUHeavy', 'PacketSpecific'.");
-                    }
+                if (options.dataPath && typeof options.dataPath !== 'string') {
+                    throw new TypeError("dataPath must be a string.");
+                } else if (options.dataPath) {
+                    this[dataPath] = options.dataPath;
                 }
 
                 if (options.noData && typeof options.noData !== 'boolean') {
                     throw new TypeError("noData must be a Boolean.");
                 } else if (options.noData) {
                     this[noData] = options.noData;
+                }
+
+                if (options.noExe && typeof options.noExe !== 'boolean') {
+                    throw new TypeError("noExe must be a Boolean.");
+                } else if (options.noExe) {
+                    this[noExe] = options.noExe;
                 }
 
                 if (options.logger && typeof options.logger !== 'function') {
@@ -128,19 +106,33 @@ const MachinaFFXIV = (() => {
                 fs.mkdirSync(remoteDatapath);
             }
 
-            this[args] = [];
-            if (this[monitorType]) this[args].push(...["--MonitorType", this[monitorType]]);
-            if (this[pid]) this[args].push(...["--ProcessID", this[pid]]);
-            if (this[ip]) this[args].push(...["--LocalIP", this[ip]]);
-            if (this[useSocketFilter]) this[args].push("--UseSocketFilter");
-            if (this[parseAlgorithm]) this[args].push(...["--ParseAlgorithm", this[parseAlgorithm]]);
-            if (this[region]) this[args].push(...["--Region", this[region]]);
-            if (this[port]) this[args].push(...["--Port", this[port]]);
-            this[exePath] = (options && options.machinaExePath) || path.join(__dirname, '/ZanarkandWrapper/ZanarkandWrapperJSON.exe');
-            if (!fs.existsSync(this[exePath])) {
-                throw new Error(`ZanarkandWrapperJSON not found in ${this[exePath]}`);
+            if (!this[noExe]) {
+                this[args] = [];
+                if (this[ip]) this[args].push(...["-LocalIP", this[ip]]);
+                if (this[region]) this[args].push(...["-Region", this[region]]);
+                if (this[port]) this[args].push(...["-Port", this[port]]);
+                if (this[dataPath]) this[args].push(...["-DataPath", this[dataPath]]);
+                if (this[noData]) this[args].push(...["-Dev", this[noData]]);
+                this[exePath] = (options && options.machinaExePath) || path.join(__dirname, '/ZanarkandWrapper/ZanarkandWrapperJSON.exe');
+                if (!fs.existsSync(this[exePath])) {
+                    throw new Error(`ZanarkandWrapperJSON not found in ${this[exePath]}`);
+                }
+
+                this.log({
+                    level: "info",
+                    message: `Starting ZanarkandWrapper from executable ${this[exePath]}.`,
+                });
+                this.launchChild();
             }
 
+            MachinaModels.loadDefinitions(options && options.definitionsDir);
+
+            this[filter] = [];
+
+            this.connect();
+        }
+
+        launchChild() {
             if (this[hasWine]) {
                 this[monitor] = spawn(`WINEPREFIX="${this[winePrefix]}" wine ${this[exePath]}`, this[args]);
             } else {
@@ -151,33 +143,35 @@ const MachinaFFXIV = (() => {
                 message: `ZanarkandWrapper spawned with arguments "${this[args].toString()}"`,
             });
 
-            MachinaModels.loadDefinitions(options && options.definitionsDir);
-
-            this[filter] = [];
-
-            // Create events to route outputs.
-            this[monitor].on('error', (err) => {
+            this[monitor].once('close', (code, signal) => {
+                this[server].close();
                 this[logger]({
-                    level: "error",
-                    message: err,
+                    level: "info",
+                    message: `ZanarkandWrapper closed with code: ${code || signal}`,
                 });
             });
 
-            // { type: raw,
-            //   opcode: number,
-            //   region: Global/KR/CN,
-            //   connection: ip1=>ip2,
-            //   operation: send/receive,
-            //   epoch,
-            //   packetSize,
-            //   segmentType,
-            //   data }
-            this[server] = http.createServer((req, res) => {
-                const data = [];
-                req.on('data', (chunk) => {
-                    data.push(chunk);
-                });
-                req.on('end', () => {
+            this[monitor].stdout
+                .on("data", (chunk) => this[log]({
+                    level: "info",
+                    message: chunk
+                }))
+                .on("error", (err) => this[log]({
+                    level: "error",
+                    message: err.message,
+                }));
+        }
+
+        connect() {
+            this[ws] = new WebSocket(
+                `ws://${this.options.networkDevice}:${this.options.port}`,
+                {
+                    perMessageDeflate: false,
+                },
+            );
+    
+            this[ws]
+                .on("message", (data) => {
                     let content;
                     try {
                         content = JSON.parse(data);
@@ -206,25 +200,22 @@ const MachinaFFXIV = (() => {
                         MachinaModels.parseAndEmit(this[logger], content, this[noData], this); // Parse packet data
                         this.emit('raw', content); // Emit a catch-all event
                     }
-
-                    res.end();
+                })
+                .on("open", () =>
+                    this.log(
+                        `Connected to ZanarkandWrapper on ${this.options.networkDevice}:${this.options.port}!`,
+                    ),
+                )
+                .on("upgrade", () =>
+                    this.log("ZanarkandWrapper connection protocol upgraded."),
+                )
+                .on("close", () => this.log("Connection with ZanarkandWrapper closed."))
+                .on("error", (err) => {
+                    this.log(
+                        `Connection errored with message ${err.message}, reconnecting in 1 second...`,
+                    );
+                    setTimeout(() => this.connect(), 1000); // This cannot be reduced since we need to maintain "this" context.
                 });
-            });
-
-            this[monitor].stderr.on('data', (err) => {
-                this[logger]({
-                    level: "error",
-                    message: err,
-                });
-            });
-
-            this[monitor].once('close', (code, signal) => {
-                this[server].close();
-                this[logger]({
-                    level: "info",
-                    message: `ZanarkandWrapper closed with code: ${code || signal}`,
-                });
-            });
         }
 
         async parse(struct) {
@@ -241,66 +232,66 @@ const MachinaFFXIV = (() => {
         }
 
         reset(callback) {
-            if (!this[exePath] || !this[args]) throw "No instance to reset.";
-            this.kill();
-            this[monitor] = spawn(this[exePath], this[args]);
-            this.start(callback);
-            this[logger]({
-                level: "info",
-                message: `ZanarkandWrapper reset!`,
-            });
-        }
-
-        start(callback) {
-            if (!this[monitor]) throw "ZanarkandWrapper is uninitialized.";
-            this[server].listen(this[port], (err) => {
-                if (err) return this[logger]({
-                    level: "error",
-                    message: err,
-                });
-                this[logger]({
+            return new Promise((_, reject) => {
+                if (this[exePath] == null || this[args] == null)
+                    reject(new Error("No instance to reset."));
+                this.kill();
+                if (!this[noExe]) {
+                    this.launchChild();
+                }
+    
+                this.start(callback);
+                this.log({
                     level: "info",
-                    message: `Server started on port ${this[port]}.`,
+                    message: `ZanarkandWrapper reset!`
                 });
-            });
-            this[monitor].stdin.write("start\n", callback);
-            this[logger]({
-                level: "info",
-                message: `ZanarkandWrapper started!`,
             });
         }
 
-        stop(callback) {
-            if (!this[monitor]) throw "ZanarkandWrapper is uninitialized.";
+        async start(callback) {
+            await this.sendMessage("start", callback);
+            this.log({
+                level: "info",
+                message: `ZanarkandWrapper started!`
+            });
+        }
+    
+        async stop(callback) {
+            await this.sendMessage("stop", callback);
+            this.ws.close(0);
+            this.log({
+                level: "info",
+                message: `ZanarkandWrapper stopped!`
+            });
+        }
+    
+        async kill(callback) {
+            await this.sendMessage("kill", callback);
+            this.ws.close(0);
+            this.log({
+                level: "info",
+                message: `ZanarkandWrapper killed!`
+            });
+        }
+    
+        async sendMessage(message, callback) {
             try {
-                this[monitor].stdin.write("stop\n", callback);
-            } catch {
-                this[logger]({
-                    level: "error",
-                    message: `Server already closed.`,
-                });
-                return;
+                if (this.options.noExe) return; // nop
+                if (!this.childProcess) {
+                    throw new Error("ZanarkandWrapper is uninitialized.");
+                }
+                await this.waitForWebSocketReady();
+                this.ws.send(message, callback);
+            } catch (err) {
+                if (callback) callback(err);
+                else throw err;
             }
-            this[server].close(() => {
-                this[logger]({
-                    level: "info",
-                    message: `Server on port ${this[port]} closed.`,
-                });
-            });
-            this[logger]({
-                level: "info",
-                message: `ZanarkandWrapper stopped!`,
-            });
         }
-
-        kill(callback) {
-            if (!this[monitor]) throw "ZanarkandWrapper is uninitialized.";
-            this[monitor].stdin.end("kill\n", callback);
-            this[monitor] = undefined;
-            this[logger]({
-                level: "info",
-                message: `ZanarkandWrapper killed!`,
-            });
+    
+        async waitForWebSocketReady() {
+            while (this.ws.readyState !== 1)
+                await new Promise((resolve) => setTimeout(resolve, 1));
+            return;
         }
     };
 
