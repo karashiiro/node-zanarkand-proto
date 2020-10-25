@@ -3,7 +3,7 @@ A WIP Node.js wrapper for acchan's [Zanarkand](https://github.com/ayyaruq/zanark
 
 Many features are unimplemented, and chat-related messages aren't completely working, but besides that what is implemented is probably usable.
 
-If you so choose, you can use it exclusively as a wrapper for Machina with minimal data processing by assigning the `raw` data event as shown below.
+If you so choose, you can use it exclusively as a wrapper for Zanarkand with minimal data processing by assigning the `raw` data event as shown below.
 
 Event type names and all packet structures are taken from the [Sapphire](https://github.com/SapphireServer/Sapphire) project.
 
@@ -14,7 +14,7 @@ NOTE: Most features besides the `raw` data event will break after every patch re
 npm install node-zanarkand-proto
 ```
 
-If you don't trust the copy of ZanarkandWrapperJSON that is built in the Github Action, feel free to also install Go to build [MachinaWrapperJSON](https://github.com/karashiiro/ZanarkandWrapperJSON) and place the output in the MachinaWrapper folder.
+If you don't trust the copy of ZanarkandWrapperJSON that is built in the Github Action, feel free to also install Go to build [ZanarkandWrapperJSON](https://github.com/karashiiro/ZanarkandWrapperJSON) and place the output in the MachinaWrapper folder.
 
 ## Usage
 [WinPCap](https://nmap.org/npcap/windows-10.html) is required.
