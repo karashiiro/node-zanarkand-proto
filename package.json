@@ -1,0 +1,24 @@
+{
+  "name": "node-zanarkand-proto",
+  "version": "2.37.19",
+  "description": "A wrapper for acchan's Zanarkand network capture library.",
+  "main": "node-zanarkand-proto.js",
+  "scripts": {
+    "postinstall": "",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "unfirewall7": "netsh advfirewall firewall add rule name=\"ZanarkandWrapperJSON\" dir=in action=allow program=./Zanarkand/ZanarkandWrapperJSON.exe enable=yes",
+    "unfirewallXP": "netsh firewall set allowedprogram ./Zanarkand/ZanarkandWrapperJSON.exe ZanarkandWrapperJSON ENABLE"
+  },
+  "author": "karashiiro",
+  "license": "MIT",
+  "homepage": "https://github.com/karashiiro/node-zanarkand-proto#readme",
+  "dependencies": {
+    "jsbi": "^3.1.1",
+    "request": "^2.88.0",
+    "request-promise": "^4.2.4",
+    "ws": "^7.3.1"
+  },
+  "devDependencies": {
+    "csv-parse": "^4.4.6"
+  }
+}
